@@ -37,7 +37,7 @@ async def on_message(message):
             total = float(total) + float(x)
 
         #print(len(temps))
-        response = "Avg Temp: " + str(total / len(temps))[:4] + "°C\nMax Temp: " + str(max(temps)) + "°C"
+        response = "**CPU Temps:**\nAvg Temp: " + str(total / len(temps))[:4] + "°C\nMax Temp: " + str(max(temps)) + "°C"
         await message.channel.send(str(response))
 
 client.run(TOKEN)
