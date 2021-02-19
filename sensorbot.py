@@ -15,12 +15,29 @@ async def on_ready():
     for server in client.guilds:
         if server.name == SERVER:
             break
-    print('{client.user} has connected to Discord!\n\n{server.name}(id: {server.id})')
+    print('{} has connected to Discord!\n\n{}(id: {})'.format(client.user, server.name, server.id))
 
 @client.event
 async def on_message(message):
     if message.content == '/sensors':
-        response = subprocess.run(['sensors'], capture_output=True, text=True).stdout
-        await message.channel.send(response)
+        sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
+        temps = []
+        total = 0
+
+        for x in range(54, 335, 56):
+            temps.append(sensors[x:x+4])
+            #print(sensors[x:x+4])
+
+        for x in range(430, 766, 56):
+            temps.append(sensors[x:x+4])
+            #print(sensors[x:x+4])
+
+        for x in temps:
+            #print(x, total)
+            total = float(total) + float(x)
+
+        #print(len(temps))
+        response = total / len(temps)
+        await message.channel.send(str(response)[:4])
 
 client.run(TOKEN)
