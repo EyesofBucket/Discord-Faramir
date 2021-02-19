@@ -6,6 +6,7 @@ import subprocess
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 SERVER = os.getenv('DISCORD_SERVER')
+#print(TOKEN)
 
 client = discord.Client()
 
@@ -19,7 +20,7 @@ async def on_ready():
 @client.event
 async def on_message(message):
     if message.content == '/sensors':
-        response = subprocess.run(['ls', '-l'], capture_output=True, text=True).stdout
+        response = subprocess.run(['sensors'], capture_output=True, text=True).stdout
         await message.channel.send(response)
 
 client.run(TOKEN)
