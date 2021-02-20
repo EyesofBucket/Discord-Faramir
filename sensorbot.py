@@ -2,62 +2,67 @@ import os
 import discord
 from dotenv import load_dotenv
 import subprocess
-from discord.ext import commands, tasks
+#from discord.ext import commands, tasks
+import asyncio
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 SERVER = os.getenv('DISCORD_SERVER')
-#print(TOKEN)
 
-bot = commands.Bot(command_prefix='/')
+#bot = commands.Bot(command_prefix='/')
 
 class BotClient(discord.Client):
     def __init__(self, *args, **kwargs):
-        super()
-    async def on_ready():
+        super().__init__(*args, **kwargs)
+
+        self.bg_task = self.loop.create_task(self.overheat())
+
+    async def on_ready(self):
         print('Logged in as')
-        print(bot.user.name)
-        print(bot.user.id)
+        print(self.user.name)
+        print(self.user.id)
         print('------')
 
-@tasks.loop(seconds=5.0)
-async def overheat(channel):
-    await 
-    sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
-    temps = []
-    total = 0
+    async def overheat(self):
+        await self.wait_until_ready()
+        channel = self.get_channel(812316744210972672)
 
-    for x in range(54, 335, 56):
-        temps.append(sensors[x:x+4])
-        #print(sensors[x:x+4])
+        while not self.is_closed():
+            sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
+            temps = []
+            total = 0
 
-    for x in range(430, 766, 56):
-        temps.append(sensors[x:x+4])
+            for x in range(54, 335, 56):
+                temps.append(sensors[x:x+4])
 
-    if float(max(temps)) >= 35.0:
-        await channel.send("**OVERHEAT!!** " + str(max(temps)))
+            for x in range(430, 766, 56):
+                temps.append(sensors[x:x+4])
 
-@bot.command()
-async def sensors(ctx):
-    sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
-    temps = []
-    total = 0
+            if float(max(temps)) >= 70.0:
+                await channel.send("**OVERHEAT!!** " + str(max(temps)))
 
-    for x in range(54, 335, 56):
-        temps.append(sensors[x:x+4])
-        #print(sensors[x:x+4])
+            await asyncio.sleep(5)
 
-    for x in range(430, 766, 56):
-        temps.append(sensors[x:x+4])
-        #print(sensors[x:x+4])
+    async def on_message(self, message):
+        if message.author.id == self.user.id:
+            return
 
-    for x in temps:
-        #print(x, total)
-        total = float(total) + float(x)
+        if message.content.startswith("/sensors"):
+            sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
+            temps = []
+            total = 0
 
-    #print(len(temps))
-    response = "**CPU Temps**\n*Avg Temp:* " + str(total / len(temps))[:4] + "°C\n*Max Temp:* " + str(max(temps)) + "°C"
-    await ctx.send(str(response))
+            for x in range(54, 335, 56):
+                temps.append(sensors[x:x+4])
+    
+            for x in range(430, 766, 56):
+                temps.append(sensors[x:x+4])
 
-overheat.start(channel_bot)
-bot.run(TOKEN)
+            for x in temps:
+                total = float(total) + float(x)
+
+            response = "**CPU Temps**\n*Avg Temp:* " + str(total / len(temps))[:4] + "°C\n*Max Temp:* " + str(max(temps)) + "°C"
+            await message.channel.send(str(response))
+
+client = BotClient()
+client.run(TOKEN)
