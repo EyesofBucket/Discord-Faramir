@@ -22,6 +22,7 @@ class BotClient(discord.Client):
         print(self.user.name)
         print(self.user.id)
         print('------')
+        await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='!help'))
 
     async def overheat(self):
         await self.wait_until_ready()
@@ -47,7 +48,13 @@ class BotClient(discord.Client):
         if message.author.id == self.user.id:
             return
 
-        if message.content.startswith("/sensors"):
+        if message.channel.name != "bot":
+            return
+
+        if message.content.startswith("!help"):
+            await message.channel.send("Hello, " + message.author.name + "!\n\n **Usage:**\n!help - *Show this help message*\n!sensors - *Return temperature of CPUs on Faramir*\n\n**GitHub:** https://github.com/EyesofBucket/Discord-Faramir")
+
+        if message.content.startswith("!sensors"):
             sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
             temps = []
             total = 0
