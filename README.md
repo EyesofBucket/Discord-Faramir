@@ -8,3 +8,4 @@ A server monitoring bot for discord, specifically made for Faramir, the mistreat
 
 - **!sensors** - Outputs average and highest CPU temps.
 - Overheat checker
+- Scheduled shutdown notifications
