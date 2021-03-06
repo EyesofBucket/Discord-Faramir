@@ -1,6 +1,7 @@
 import os
 import discord
 from dotenv import load_dotenv
+from datetime import datetime, timezone
 import subprocess
 #from discord.ext import commands, tasks
 import asyncio
@@ -16,6 +17,7 @@ class BotClient(discord.Client):
         super().__init__(*args, **kwargs)
 
         self.bg_task = self.loop.create_task(self.overheat())
+        self.bg_task = self.loop.create_task(self.maintenance())
 
     async def on_ready(self):
         print('Logged in as')
@@ -26,7 +28,7 @@ class BotClient(discord.Client):
 
     async def overheat(self):
         await self.wait_until_ready()
-        channel = self.get_channel(812316744210972672)
+        channel = self.get_channel(813579167110660096)
 
         while not self.is_closed():
             sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
@@ -44,14 +46,35 @@ class BotClient(discord.Client):
 
             await asyncio.sleep(5)
 
+    async def maintenance(self):
+        await self.wait_until_ready()
+        channel = self.get_channel(813591477460140053)
+        schedule = 0
+        
+        while not self.is_closed():
+            if os.path.isfile('/run/systemd/shutdown/scheduled'):
+                if schedule <= 1: # 0 or 1 send message
+                    schedule = 2
+                    shutdowntime = subprocess.run(["perl -wne 'm/^USEC=(\d+)\d{6}$/ and printf(%s, scalar localtime $1)' < /run/systemd/shutdown/scheduled"], shell=True, capture_output=True, text=True).stdout
+                    shutdownmode = subprocess.run(['cat /run/systemd/shutdown/scheduled | grep MODE'], shell=True, capture_output=True, text=True).stdout
+                    #timedate = datetime.fromtimestamp(int(shutdowntime[5:]))
+#                    mode = shutdownmode[5:]
+                    
+                    await channel.send("**Maintenance Scheduled:**\nScheduled for: {1}\nType: {0}".format(shutdownmode[5:], shutdowntime))
+            elif schedule > 0:
+                schedule = 0
+                await channel.send("**Maintenance Cancelled**")
+            await asyncio.sleep(5)
+
     async def on_message(self, message):
+        prefix="!"
         if message.author.id == self.user.id:
             return
 
-        if message.channel.name != "bot":
+        if message.channel.name != "admin":
             return
 
-        if message.content.startswith("!help"):
+        if message.content.startswith(prefix + "help"):
             await message.channel.send("Hello, " + message.author.name + "!\n\n **Usage:**\n!help - *Show this help message*\n!sensors - *Return temperature of CPUs on Faramir*\n\n**GitHub:** https://github.com/EyesofBucket/Discord-Faramir")
 
         if message.content.startswith("!sensors"):
