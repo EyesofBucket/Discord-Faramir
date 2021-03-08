@@ -71,11 +71,15 @@ class BotClient(discord.Client):
         if message.author.id == self.user.id:
             return
 
-        if message.channel.name != "admin":
-            return
+# ALL USERS
 
         if message.content.startswith(prefix + "help"):
             await message.channel.send("Hello, " + message.author.name + "!\n\n **Usage:**\n!help - *Show this help message*\n!sensors - *Return temperature of CPUs on Faramir*\n\n**GitHub:** https://github.com/EyesofBucket/Discord-Faramir")
+
+# ADMIN ONLY
+
+        if message.channel.name != "admin":
+            return
 
         if message.content.startswith("!sensors"):
             sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
@@ -84,7 +88,7 @@ class BotClient(discord.Client):
 
             for x in range(54, 335, 56):
                 temps.append(sensors[x:x+4])
-    
+
             for x in range(430, 766, 56):
                 temps.append(sensors[x:x+4])
 
