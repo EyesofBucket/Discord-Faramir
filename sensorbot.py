@@ -5,10 +5,16 @@ from datetime import datetime, timezone
 import subprocess
 #from discord.ext import commands, tasks
 import asyncio
+import re
+import json
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 SERVER = os.getenv('DISCORD_SERVER')
+CHANNEL_BOT = os.getenv('CHANNEL_BOT')
+CHANNEL_ADMIN = os.getenv('CHANNEL_ADMIN')
+CHANNEL_DOWNTIME = os.getenv('CHANNEL_DOWNTIME')
+HOMEDIR = os.getenv('HOMEDIR')
 
 #bot = commands.Bot(command_prefix='/')
 
@@ -28,7 +34,7 @@ class BotClient(discord.Client):
 
     async def overheat(self):
         await self.wait_until_ready()
-        channel = self.get_channel(813579167110660096)
+        channel = self.get_channel(CHANNEL_BOT)
 
         while not self.is_closed():
             sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
@@ -48,7 +54,7 @@ class BotClient(discord.Client):
 
     async def maintenance(self):
         await self.wait_until_ready()
-        channel = self.get_channel(813591477460140053)
+        channel = self.get_channel(CHANNEL_DOWNTIME)
         schedule = 0
         
         while not self.is_closed():
@@ -59,8 +65,13 @@ class BotClient(discord.Client):
                     shutdownmode = subprocess.run(['cat /run/systemd/shutdown/scheduled | grep MODE'], shell=True, capture_output=True, text=True).stdout
                     #timedate = datetime.fromtimestamp(int(shutdowntime[5:]))
 #                    mode = shutdownmode[5:]
-                    
-                    await channel.send("**Maintenance Scheduled:**\nScheduled for: {1}\nType: {0}".format(shutdownmode[5:], shutdowntime))
+                    print("before json")
+                    f = open(HOMEDIR + 'sdargs.json',)
+                    print("opened")
+                    sdargs = json.load(f)
+                    print("loaded")
+                    await channel.send("**Maintenance Scheduled:**\nScheduled for: {1} - {3}\nType: {0}\nDescription: {2}".format(shutdownmode[5:], shutdowntime, sdargs["sdmessage"], sdargs["sdetc"]))
+                    open(HOMEDIR + 'sdargs.json', 'w').close()
             elif schedule > 0:
                 schedule = 0
                 await channel.send("**Maintenance Cancelled**")
@@ -81,7 +92,40 @@ class BotClient(discord.Client):
         if message.channel.name != "admin":
             return
 
-        if message.content.startswith("!sensors"):
+        if message.content.startswith(prefix + "shutdown"):
+            msg = message.content
+            sdtype = re.search(" -type ([^ ]*)",msg)
+            sdmessage = re.search(" -message \"(.*)\"",msg)
+            sdtime = re.search("-time ([^ ]*)",msg)
+            sdetc = re.search("-etc ([^ ]*)",msg)
+            sdcancel = re.search("-cancel",msg)
+            cancel = ""
+            
+            try:
+                cancel = sdcancel.group(0)
+            except:
+                print("whoops")
+
+            if cancel == "-cancel":
+                subprocess.run(['shutdown', '-c']).stdout
+            else:
+                args ={
+                    "sdmessage" : sdmessage.group(1),
+                    "sdetc" : sdetc.group(1)
+                }
+                
+                with open(HOMEDIR + "sdargs.json", "w") as outfile:
+                    json.dump(args, outfile)
+                
+                # Parse shutdown type into shell argument
+                if sdtype.group(1) == "reboot":
+                     typeflag = "-r"
+                elif sdtype.group(1) == "shutdown":
+                     typeflag = "-P"
+                
+                subprocess.run(['shutdown', typeflag, sdtime.group(1)]).stdout
+
+        if message.content.startswith(prefix + "sensors"):
             sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
             temps = []
             total = 0
