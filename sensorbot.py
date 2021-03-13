@@ -30,11 +30,12 @@ class BotClient(discord.Client):
         print(self.user.name)
         print(self.user.id)
         print('------')
+        print(CHANNEL_BOT + "\n" + CHANNEL_ADMIN + "\n" + CHANNEL_DOWNTIME)
         await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='!help'))
 
     async def overheat(self):
         await self.wait_until_ready()
-        channel = self.get_channel(CHANNEL_BOT)
+        channel = self.get_channel(812316744210972672)
 
         while not self.is_closed():
             sensors = subprocess.run(['sensors'], capture_output=True, text=True).stdout
@@ -54,7 +55,7 @@ class BotClient(discord.Client):
 
     async def maintenance(self):
         await self.wait_until_ready()
-        channel = self.get_channel(CHANNEL_DOWNTIME)
+        channel = self.get_channel(813591477460140053)
         schedule = 0
         
         while not self.is_closed():
@@ -69,9 +70,12 @@ class BotClient(discord.Client):
                     f = open(HOMEDIR + 'sdargs.json',)
                     print("opened")
                     sdargs = json.load(f)
-                    print("loaded")
-                    await channel.send("**Maintenance Scheduled:**\nScheduled for: {1} - {3}\nType: {0}\nDescription: {2}".format(shutdownmode[5:], shutdowntime, sdargs["sdmessage"], sdargs["sdetc"]))
-                    open(HOMEDIR + 'sdargs.json', 'w').close()
+                    print(sdargs)
+                    #sdargs = json.loads(sdjson)
+                    #print(sdargs)
+                    print(sdargs["sdduration"])
+                    await channel.send("**Maintenance Scheduled:**\nScheduled for: {1}\nType: {0}Description: {2}\nEstimated Duration: {3}".format(shutdownmode[5:], shutdowntime, sdargs["sdmessage"], sdargs["sdduration"]))
+                    #open(HOMEDIR + 'sdargs.json', 'w').close()
             elif schedule > 0:
                 schedule = 0
                 await channel.send("**Maintenance Cancelled**")
@@ -95,9 +99,9 @@ class BotClient(discord.Client):
         if message.content.startswith(prefix + "shutdown"):
             msg = message.content
             sdtype = re.search(" -type ([^ ]*)",msg)
-            sdmessage = re.search(" -message \"(.*)\"",msg)
+            sdmessage = re.search(" -message \"([^\"]*)",msg)
             sdtime = re.search("-time ([^ ]*)",msg)
-            sdetc = re.search("-etc ([^ ]*)",msg)
+            sdduration = re.search("-duration \"([^\"]*)",msg)
             sdcancel = re.search("-cancel",msg)
             cancel = ""
             
@@ -111,7 +115,7 @@ class BotClient(discord.Client):
             else:
                 args ={
                     "sdmessage" : sdmessage.group(1),
-                    "sdetc" : sdetc.group(1)
+                    "sdduration" : sdduration.group(1)
                 }
                 
                 with open(HOMEDIR + "sdargs.json", "w") as outfile:
