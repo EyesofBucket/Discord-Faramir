@@ -64,16 +64,8 @@ class BotClient(discord.Client):
                     schedule = 2
                     shutdowntime = subprocess.run(["perl -wne 'm/^USEC=(\d+)\d{6}$/ and printf(%s, scalar localtime $1)' < /run/systemd/shutdown/scheduled"], shell=True, capture_output=True, text=True).stdout
                     shutdownmode = subprocess.run(['cat /run/systemd/shutdown/scheduled | grep MODE'], shell=True, capture_output=True, text=True).stdout
-                    #timedate = datetime.fromtimestamp(int(shutdowntime[5:]))
-#                    mode = shutdownmode[5:]
-                    print("before json")
                     f = open(HOMEDIR + 'sdargs.json',)
-                    print("opened")
                     sdargs = json.load(f)
-                    print(sdargs)
-                    #sdargs = json.loads(sdjson)
-                    #print(sdargs)
-                    print(sdargs["sdduration"])
                     await channel.send("**Maintenance Scheduled:**\nScheduled for: {1}\nType: {0}Description: {2}\nEstimated Duration: {3}".format(shutdownmode[5:], shutdowntime, sdargs["sdmessage"], sdargs["sdduration"]))
                     #open(HOMEDIR + 'sdargs.json', 'w').close()
             elif schedule > 0:
@@ -89,7 +81,7 @@ class BotClient(discord.Client):
 # ALL USERS
 
         if message.content.startswith(prefix + "help"):
-            await message.channel.send("Hello, " + message.author.name + "!\n\n **Usage:**\n!help - *Show this help message*\n!sensors - *Return temperature of CPUs on Faramir*\n\n**GitHub:** https://github.com/EyesofBucket/Discord-Faramir")
+            await message.channel.send("Hello, " + message.author.name + "!\n\n **Usage:**\n!help - *Show this help message*\n!sensors - *Return temperature of CPUs on Faramir*\n!shutdown - *Schedule maintenance on the server*\n  *-type [reboot|shutdown]*\n  *-time [hh:mm]*\n  *-message \"message\"*\n  *-duration \"duration\"*\n  *-cancel*\n\n**GitHub:** https://github.com/EyesofBucket/Discord-Faramir")
 
 # ADMIN ONLY
 
